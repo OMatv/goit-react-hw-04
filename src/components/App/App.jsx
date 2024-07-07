@@ -1,91 +1,87 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import SearchBar from "../SearchBar/SearchBar";
 import ImageGallery from "../ImageGallery/ImageGallery";
 import Loader from "../Loader/Loader";
 import ErrorMessage from "../ErrorMessage/ErrorMessage";
 import LoadMoreBtn from "../LoadMoreBtn/LoadMoreBtn";
 import ImageModal from "../ImageModal/ImageModal";
-import axios from "axios";
-import { toast, Toaster } from "react-hot-toast";
-import "./App.module.css";
+import styles from "./App.module.css";
 
 export default function App() {
   const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [modalImage, setModalImage] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
-  const accessKey = "St9AFIrYU0aQI09YxF_W4IuWImTsr6Veu_assiJTOiE";
+  useEffect(() => {
+    if (!query) return;
 
-  const fetchImages = async (query, page) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.get(
-        `https://api.unsplash.com/search/photos`,
-        {
-          params: { query, page, per_page: 12 },
-          headers: {
-            Authorization: `Client-ID ${accessKey}`,
-          },
-        }
-      );
-
-      if (response.data.results.length === 0) {
-        toast.error("No images found!");
-      } else {
+    const fetchImages = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          `https://api.unsplash.com/search/photos`,
+          {
+            params: {
+              query,
+              page,
+              per_page: 12,
+              client_id: "St9AFIrYU0aQI09YxF_W4IuWImTsr6Veu_assiJTOiE", // З
+            },
+          }
+        );
         setImages((prevImages) => [...prevImages, ...response.data.results]);
+        setError(false);
+      } catch (error) {
+        setError("Failed to fetch images");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setError("Failed to fetch images.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  const handleSearchSubmit = (searchQuery) => {
-    if (searchQuery.trim() === "") {
-      toast.error("Please enter a search term.");
-      return;
-    }
+    fetchImages();
+  }, [query, page]);
 
-    setQuery(searchQuery);
+  const handleSearchSubmit = (query) => {
+    setQuery(query);
     setPage(1);
     setImages([]);
-    fetchImages(searchQuery, 1);
   };
 
   const handleLoadMore = () => {
-    fetchImages(query, page + 1);
-    setPage(page + 1);
+    setPage((prevPage) => prevPage + 1);
   };
 
   const openModal = (image) => {
-    setSelectedImage(image);
+    setModalImage(image);
+    setShowModal(true);
   };
 
   const closeModal = () => {
-    setSelectedImage(null);
+    setShowModal(false);
+    setModalImage(null);
   };
 
   return (
-    <div className="App">
+    <div className={styles.AppContainer}>
       <SearchBar onSubmit={handleSearchSubmit} />
-      {images.length > 0 && (
-        <ImageGallery images={images} onImageClick={openModal} />
-      )}
-      {loading && <Loader />}
       {error && <ErrorMessage message={error} />}
+      <ImageGallery images={images} openModal={openModal} />
+      {loading && <Loader />}
       {images.length > 0 && !loading && (
         <LoadMoreBtn onClick={handleLoadMore} />
       )}
-      {selectedImage && (
-        <ImageModal image={selectedImage} onClose={closeModal} />
+      {showModal && modalImage && (
+        <ImageModal
+          isOpen={showModal}
+          onRequestClose={closeModal}
+          image={modalImage}
+        />
       )}
-      <Toaster />
     </div>
   );
 }

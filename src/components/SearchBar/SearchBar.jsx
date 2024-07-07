@@ -1,26 +1,37 @@
 import { useState } from "react";
+import styles from "./SearchBar.module.css";
+
 export default function SearchBar({ onSubmit }) {
   const [query, setQuery] = useState("");
 
-  const handleChange = (event) => {
-    setQuery(event.target.value);
+  const handleChange = (e) => {
+    setQuery(e.target.value);
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (query.trim() === "") {
+      alert("Please enter a search query");
+      return;
+    }
     onSubmit(query);
   };
 
   return (
-    <header>
-      <form onSubmit={handleSubmit}>
+    <header className={styles.header}>
+      <form onSubmit={handleSubmit} className={styles.form}>
         <input
           type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
           value={query}
           onChange={handleChange}
-          placeholder="Search images and photos"
+          className={styles.input}
         />
-        <button type="submit">Search</button>
+        <button type="submit" className={styles.button}>
+          Search
+        </button>
       </form>
     </header>
   );
